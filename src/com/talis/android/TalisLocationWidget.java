@@ -132,7 +132,7 @@ public class TalisLocationWidget extends AppWidgetProvider {
             } catch (Exception e) {
     			Toast.makeText(myContext, e.getMessage(), Toast.LENGTH_SHORT).show();            	
             }
-            String nearResource = null;
+            ArrayList<String> nearResourceList = new ArrayList<String>();
             Resource nearPointResource = nearModel.getResource(nearPoint);
             if (nearPoint != null) {
             	StmtIterator it = nearPointResource.listProperties();
@@ -141,7 +141,7 @@ public class TalisLocationWidget extends AppWidgetProvider {
             		if (s.getPredicate().getURI().equals("http://open.vocab.org/terms/near")) {
             			if (s.getObject().isURIResource()) {
             				Resource r = (Resource)s.getObject();
-                			nearResource = r.getURI();
+                			nearResourceList.add(r.getURI());
             			}
             		}
             	}
@@ -167,7 +167,7 @@ public class TalisLocationWidget extends AppWidgetProvider {
             				model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#long"), 
             				model.createLiteral(""+myLng))
             );
-            if (nearResource != null) {
+            for (String nearResource : nearResourceList) {
                 model.add(
                 		model.createStatement(
                 				model.createResource(updateUri), 
@@ -180,8 +180,8 @@ public class TalisLocationWidget extends AppWidgetProvider {
             model.write(stringWriter);
             String rdf = stringWriter.toString();
             try {
-            	URI uri = new URI("http://api.talis.com/stores/yourstore/meta");
-                DefaultHttpClient client = getClient(uri,"youruser", "yourpassword");
+            	URI uri = new URI("http://api.talis.com/stores/tweevr-dev1/meta");
+                DefaultHttpClient client = getClient(uri,"tweevr", "jtdgjcq6");
         		HttpPost request = new HttpPost(uri);
         		HttpEntity entity = new StringEntity(rdf);
         		request.setEntity(entity);
