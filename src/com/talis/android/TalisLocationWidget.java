@@ -180,8 +180,8 @@ public class TalisLocationWidget extends AppWidgetProvider {
             model.write(stringWriter);
             String rdf = stringWriter.toString();
             try {
-            	URI uri = new URI("http://api.talis.com/stores/tweevr-dev1/meta");
-                DefaultHttpClient client = getClient(uri,"tweevr", "jtdgjcq6");
+            	URI uri = new URI("http://api.talis.com/stores/yourstore/meta");
+                DefaultHttpClient client = getClient(uri,"youruser", "yourpassword");
         		HttpPost request = new HttpPost(uri);
         		HttpEntity entity = new StringEntity(rdf);
         		request.setEntity(entity);
