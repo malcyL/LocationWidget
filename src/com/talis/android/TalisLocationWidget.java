@@ -1,5 +1,6 @@
 package com.talis.android;
 
+import java.io.StringWriter;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,9 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
+
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -76,6 +80,27 @@ public class TalisLocationWidget extends AppWidgetProvider {
 				locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 
 						0, new LocationUpdateHandler(locationManager, context));	  
 				msg = "Updating location...";
+				
+// DEBUG				
+//	            Model model = ModelFactory.createDefaultModel();
+//	            model.createStatement(
+//	            		model.createResource("http://www.example.com/1"), 
+//	            		model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#Point"), 
+//	            		model.createResource("http://www.example.com/1/point"));
+//	            model.createStatement(
+//	            		model.createResource("http://www.example.com/1/point"), 
+//	            		model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#lat"), 
+//	            		model.createLiteral(""+myLat));
+//	            model.createStatement(
+//	            		model.createResource("http://www.example.com/1/point"), 
+//	            		model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#long"), 
+//	            		model.createLiteral(""+myLng));
+//	            StringWriter stringWriter = new StringWriter();
+//	            model.write(stringWriter);
+//	            String rdf = stringWriter.toString();
+//	Toast.makeText(context, "Sending rdf: " + rdf, Toast.LENGTH_SHORT).show();
+// DEBUG				
+				
 			} else {
 				msg = "No location service found.";
 			}
@@ -110,16 +135,31 @@ public class TalisLocationWidget extends AppWidgetProvider {
             
             myLocationManager.removeUpdates(this);
             
-            String rdf = "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" " +
-                         "         xmlns:geo=\"http://www.w3.org/2003/01/geo/wgs84_pos#\"> " +
-                         "  <geo:Point> " +
-                         "    <geo:lat>"+myLat+"</geo:lat> " +
-                         "    <geo:long>"+myLng+"</geo:long> " +
-                         "  </geo:Point> " +
-                         "</rdf:RDF>";
+            Model model = ModelFactory.createDefaultModel();
+            model.add(
+            		model.createStatement(
+            				model.createResource("http://www.example.com/1"), 
+            				model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#Point"), 
+            				model.createResource("http://www.example.com/1/point")) 
+            );
+            model.add(
+            		model.createStatement(
+            				model.createResource("http://www.example.com/1/point"), 
+            				model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#lat"), 
+            				model.createLiteral(""+myLat))
+            );
+            model.add(
+            		model.createStatement(
+            				model.createResource("http://www.example.com/1/point"), 
+            				model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#long"), 
+            				model.createLiteral(""+myLng))
+            );
+            StringWriter stringWriter = new StringWriter();
+            model.write(stringWriter);
+            String rdf = stringWriter.toString();
             try {
             	URI uri = new URI("http://api.talis.com/stores/yourstore/meta");
-                DefaultHttpClient client = getClient(uri,"yourusername", "yourpassword");
+                DefaultHttpClient client = getClient(uri,"youruser", "yourpassword");
         		HttpPost request = new HttpPost(uri);
         		HttpEntity entity = new StringEntity(rdf);
         		request.setEntity(entity);
