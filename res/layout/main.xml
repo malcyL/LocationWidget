@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent"
+  android:orientation="horizontal"
+  android:layout_gravity="center"
+  android:layout_height="wrap_content">
+<TextView
+  android:layout_width="8px"
+  android:layout_height="wrap_content"/>
+<ImageButton android:text="Locate" android:id="@+id/button_status"
+       android:layout_gravity="center_horizontal|center_vertical"
+       android:layout_height="48sp"
+       android:layout_width="48sp"/>
+</LinearLayout>

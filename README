@@ -1,0 +1,6 @@
+Location Widget
+=====================================
+
+This is an android widget created at Talis Hackday.
+
+The widget obtains the location of the phone and post the lat long coordinates into a Talis Platform Store.
