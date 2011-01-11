@@ -2,6 +2,7 @@ package com.talis.android;
 
 import java.io.StringWriter;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +31,12 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -80,31 +85,9 @@ public class TalisLocationWidget extends AppWidgetProvider {
 				locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 
 						0, new LocationUpdateHandler(locationManager, context));	  
 				msg = "Updating location...";
-				
-// DEBUG				
-//	            Model model = ModelFactory.createDefaultModel();
-//	            model.createStatement(
-//	            		model.createResource("http://www.example.com/1"), 
-//	            		model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#Point"), 
-//	            		model.createResource("http://www.example.com/1/point"));
-//	            model.createStatement(
-//	            		model.createResource("http://www.example.com/1/point"), 
-//	            		model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#lat"), 
-//	            		model.createLiteral(""+myLat));
-//	            model.createStatement(
-//	            		model.createResource("http://www.example.com/1/point"), 
-//	            		model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#long"), 
-//	            		model.createLiteral(""+myLng));
-//	            StringWriter stringWriter = new StringWriter();
-//	            model.write(stringWriter);
-//	            String rdf = stringWriter.toString();
-//	Toast.makeText(context, "Sending rdf: " + rdf, Toast.LENGTH_SHORT).show();
-// DEBUG				
-				
 			} else {
 				msg = "No location service found.";
 			}
-
 		}			
 
 		if (msg != null) {
@@ -135,25 +118,64 @@ public class TalisLocationWidget extends AppWidgetProvider {
             
             myLocationManager.removeUpdates(this);
             
+            Model nearModel = ModelFactory.createDefaultModel();
+            String nearPoint = String.format("http://rdfize.com/geo/point/%.2f/%.2f/",myLat,myLng);
+            try {
+                String nearQueryString = String.format("http://api.talis.com/stores/near/meta?about=%s",nearPoint);
+            	URI uri = new URI(nearQueryString);
+                DefaultHttpClient client = getClient(uri,null, null);
+        		HttpGet request = new HttpGet(uri);
+        		request.setHeader("accept", "application/rdf+xml");
+        		HttpResponse response = client.execute(request);
+                
+                nearModel.read(response.getEntity().getContent(), "");
+            } catch (Exception e) {
+    			Toast.makeText(myContext, e.getMessage(), Toast.LENGTH_SHORT).show();            	
+            }
+            String nearResource = null;
+            Resource nearPointResource = nearModel.getResource(nearPoint);
+            if (nearPoint != null) {
+            	StmtIterator it = nearPointResource.listProperties();
+            	while (it.hasNext()) {
+            		Statement s = it.nextStatement();
+            		if (s.getPredicate().getURI().equals("http://open.vocab.org/terms/near")) {
+            			if (s.getObject().isURIResource()) {
+            				Resource r = (Resource)s.getObject();
+                			nearResource = r.getURI();
+            			}
+            		}
+            	}
+            }
+            
+            String updateUri = "http://www.example.com/" + System.currentTimeMillis();
             Model model = ModelFactory.createDefaultModel();
             model.add(
             		model.createStatement(
-            				model.createResource("http://www.example.com/1"), 
+            				model.createResource(updateUri), 
             				model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#Point"), 
-            				model.createResource("http://www.example.com/1/point")) 
+            				model.createResource(updateUri + "/point")) 
             );
             model.add(
             		model.createStatement(
-            				model.createResource("http://www.example.com/1/point"), 
+            				model.createResource(updateUri + "/point"), 
             				model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#lat"), 
             				model.createLiteral(""+myLat))
             );
             model.add(
             		model.createStatement(
-            				model.createResource("http://www.example.com/1/point"), 
+            				model.createResource(updateUri + "/point"), 
             				model.createProperty("http://www.w3.org/2003/01/geo/wgs84_pos#long"), 
             				model.createLiteral(""+myLng))
             );
+            if (nearResource != null) {
+                model.add(
+                		model.createStatement(
+                				model.createResource(updateUri), 
+                				model.createProperty("http://open.vocab.org/terms/near"), 
+                				model.createResource(nearResource))
+                );
+            }
+            
             StringWriter stringWriter = new StringWriter();
             model.write(stringWriter);
             String rdf = stringWriter.toString();
